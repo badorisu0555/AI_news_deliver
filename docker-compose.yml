@@ -1,0 +1,15 @@
+
+version: '3.8'
+services:
+  python:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      Bedrock_API_Key: ${Bedrock_API_Key}
+      tweet_API_Key: ${tweet_API_Key}
+    container_name: python
+    volumes:
+      - ./src:/app
+    stdin_open: true
+    tty: true

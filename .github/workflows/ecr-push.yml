@@ -1,0 +1,41 @@
+name: Build and Push to ECR
+ 
+on:
+  push:
+    branches:
+      - main
+ 
+env:
+  AWS_REGION: ap-northeast-1
+  ECR_REPOSITORY: test-project  #ECRリポジトリ名を指定
+ 
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # (1) OIDCトークン取得のため
+      contents: read    # リポジトリのコードを読み取るため
+ 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+ 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4   # (2)
+        with:
+          role-to-assume: arn:aws:iam::992382612474:role/github-actions-ecr-push-example-role
+          aws-region: ap-northeast-1
+
+# (A) これを使うだけで docker login コマンドが不要になります
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # (B) イメージのビルド・タグ付け・プッシュを一括で行う
+      - name: Build and Push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }} # コミットハッシュをタグにするのが一般的
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG

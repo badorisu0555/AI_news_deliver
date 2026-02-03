@@ -51,5 +51,7 @@ https://note.com/eurekachan/n/n0c1c1b8793e2
 https://ai-media-bsg.com/
 
 ## DynamoDBの参考記事
-https://maku.blog/p/wht5epz/　：　DynamoDB テーブルにアイテムを追加する
-https://qtatsu.hatenablog.com/entry/2020/07/12/021428　：　DynamoDBのバッチ処理
+https://maku.blog/p/wht5epz/<br>
+：　DynamoDB テーブルにアイテムを追加する
+https://qtatsu.hatenablog.com/entry/2020/07/12/021428<br>
+：　DynamoDBのバッチ処理

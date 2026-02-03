@@ -26,16 +26,44 @@ jobs:
           role-to-assume: arn:aws:iam::992382612474:role/github-actions-ecr-push-example-role
           aws-region: ap-northeast-1
 
-# (A) これを使うだけで docker login コマンドが不要になります
+    # (A) これを使うだけで docker login コマンドが不要になります
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       # (B) イメージのビルド・タグ付け・プッシュを一括で行う
+    # 1. ECRへプッシュ（前回のステップ）
       - name: Build and Push
+        id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }} # コミットハッシュをタグにするのが一般的
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          # 次のステップにイメージの場所を伝える
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # 2. 既存のタスク定義をAWSから取得してファイルにする
+      - name: Download task definition
+        run: |
+          # test-project の部分はご自身の「タスク定義ファミリー名」に変えてください
+          aws ecs describe-task-definition --task-definition test-project --query taskDefinition > task-definition.json
+
+      # 3. ファイル内の「イメージ名」を最新のものに書き換える
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: app # CloudFormationで決めたコンテナ名
+          image: ${{ steps.build-image.outputs.image }}
+
+      # 4. ECSサービスを更新（デプロイ）
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: test-project-service  # CloudFormationで作成したサービス名
+          cluster: test-project  # CloudFormationで作成したクラスター名
+          wait-for-service-stability: true

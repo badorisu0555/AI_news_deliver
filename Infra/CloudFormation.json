@@ -4,7 +4,7 @@
   "Parameters": {
     "ProjectName": {
       "Type": "String",
-      "Default": "test-project",
+      "Default": "test-project"
     }
   },
   "Resources": {

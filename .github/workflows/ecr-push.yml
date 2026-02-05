@@ -13,26 +13,26 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write   # (1) OIDCトークン取得のため
+      id-token: write   # OIDCトークン取得のため
       contents: read    # リポジトリのコードを読み取るため
  
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout repository # ソースコードを取得
+        uses: actions/checkout@v4 
  
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4   # (2)
+      - name: Configure AWS credentials # AWS認証情報の設定
+        uses: aws-actions/configure-aws-credentials@v4 
         with:
           role-to-assume: arn:aws:iam::992382612474:role/github-actions-ecr-push-example-role
           aws-region: ap-northeast-1
 
-    # (A) これを使うだけで docker login コマンドが不要になります
+    # これを使うだけで docker login コマンドが不要になります
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # (B) イメージのビルド・タグ付け・プッシュを一括で行う
-    # 1. ECRへプッシュ（前回のステップ）
+    # イメージのビルド・タグ付け・プッシュを一括で行う
+    # 1. ECRへプッシュ
       - name: Build and Push
         id: build-image
         env:

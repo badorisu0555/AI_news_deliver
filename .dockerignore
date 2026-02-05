@@ -8,3 +8,6 @@ venv/
 
 client.py
 sample_app.py
+
+template/
+no-use/

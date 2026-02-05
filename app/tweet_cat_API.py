@@ -6,14 +6,13 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-"""
 @app.get("/")
 def read_root():
     return {"message": "Nogizaka46 Related Tweet Categorization API", "status": "healthy"}
-"""
+
 #query = "乃木坂46"
 #tweet_cnt = 10
-
+"""
 @app.get("/predict")
 def main(query,tweet_cnt :int = Query(10, ge=1, le=100)):
     try:
@@ -28,3 +27,4 @@ def main(query,tweet_cnt :int = Query(10, ge=1, le=100)):
         return answer
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+"""

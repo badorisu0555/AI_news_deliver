@@ -1,6 +1,9 @@
 venv/
 .env/
 
+template/
+no-use/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

@@ -2,7 +2,7 @@
 import json
 from unittest.mock import patch
 from fastapi.responses import JSONResponse
-from app.tweet_cat_API import main
+from app.main import main
 
 
 def test_main_success():

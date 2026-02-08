@@ -18,8 +18,20 @@ def dynamo_batch_write(news_df, table_name, region_name='ap-northeast-1'):
         for item in news_data:
             item_not_has_nan = {key: item[key] for key in item if item[key] is not np.nan}
             batch.put_item(Item=item_not_has_nan)
+    print(f"Successfully wrote {len(news_data)} items to {table_name} table.")
     return "Successfully wrote to DynamoDB"
 
 # 動作確認
 if __name__ == "__main__":
-    dynamo_batch_write(news_df, table_name, region_name)
+    # テスト用のサンプルデータを作成
+    sample_data = {
+        'title': ['Sample News 1', 'Sample News 2'],
+        'content': ['Content 1', 'Content 2'],
+    }
+    news_df = pd.DataFrame(sample_data)
+    table_name = 'test-table'
+    dynamo_batch_write(news_df, table_name, region_name='ap-northeast-1')
+
+# 動作確認
+if __name__ == "__main__":
+    dynamo_batch_write(news_df, table_name, region_name='ap-northeast-1')

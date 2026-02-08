@@ -2,7 +2,7 @@
 import json
 from unittest.mock import patch
 from fastapi.responses import JSONResponse
-from app.main import main
+from app.batch.main import main
 
 
 def test_main_success():

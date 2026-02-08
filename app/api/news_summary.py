@@ -7,28 +7,26 @@ import os
 from dotenv import load_dotenv
 
 def load_api_key():
-    load_dotenv(dotenv_path="./.env", override=True)
+    # override=False にすることで、OS環境変数が既に設定されている場合はそれを優先します
+    env_path = os.path.join(os.path.dirname(__file__), "../../.env", override=False)
+    load_dotenv(dotenv_path=env_path, override=True)
     os.environ["AWS_BEARER_TOKEN_BEDROCK"] = os.getenv("Bedrock_API_Key")
 
-def create_response(prompt_text,df_json):
-    client = boto3.client(
-        "bedrock-runtime",
-        region_name="us-east-1"
-    )
+def create_response(prompt_text,news_data):
+    client = boto3.client("bedrock-runtime")
 
     prompt = PromptTemplate(
-        input_variables=["tweet_data"],
+        input_variables=["news_data"],
         template = prompt_text)
-    prompt = prompt.format(tweet_data=df_json)
+    prompt = prompt.format(news_data=news_data)
 
     body = json.dumps({
         "messages":[
             {"role":"user","content":prompt}
         ],
-        "max_tokens":1024,
+        "max_tokens":4096,
         "temperature":0.5,
         "anthropic_version":"bedrock-2023-05-31"
-        
     })
 
     model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
@@ -40,15 +38,18 @@ def create_response(prompt_text,df_json):
 
     return response
 
-# LLMを使ってツイートを分類する関数
-def categorize_tweets_with_LLM(df_json):
+def summarize_news_with_LLM(news_data):
     load_api_key()
 
-    f = open("app/prompt.txt","r",encoding="utf-8")
+    prompt_path = os.path.join(os.path.dirname(__file__), "prompt.txt")
+    f = open(prompt_path,"r",encoding="utf-8")
     prompt_text = f.read()
-    response = create_response(prompt_text,df_json)
+    response = create_response(prompt_text,news_data)
 
     response_body = json.loads(response.get("body").read())
     answer = response_body["content"][0]["text"]
     return answer
 
+# 動作確認
+if __name__ == "__main__":
+     summarize_news_with_LLM()

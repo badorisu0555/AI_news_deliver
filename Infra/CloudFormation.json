@@ -1,10 +1,15 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "ECR, ECS, VPC, Subnet, RouteTable, IGW + SSM Parameter Store Integration",
+  "Description": "ECR, ECS(API + Scheduled Task), VPC, and EventBridge",
   "Parameters": {
     "ProjectName": {
       "Type": "String",
       "Default": "test-project"
+    },
+    "ScheduleExpression": {
+      "Type": "String",
+      "Default": "cron(0 1 1 * ? *)",
+      "Description": "Schedule for the batch task (UTC)"
     }
   },
   "Resources": {
@@ -78,7 +83,7 @@
         "GroupDescription": "Allow HTTP",
         "VpcId": { "Ref": "EC2VPC" },
         "SecurityGroupIngress": [
-          { "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "CidrIp": "0.0.0.0/0" }
+          { "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "CidrIp": "61.21.197.84/32" }
         ]
       }
     },
@@ -113,10 +118,10 @@
         "ClusterName": { "Ref": "ProjectName" }
       }
     },
-    "ECSTaskDefinition": {
+    "ApiTaskDefinition": {
       "Type": "AWS::ECS::TaskDefinition",
       "Properties": {
-        "Family": { "Ref": "ProjectName" },
+        "Family": { "Fn::Sub": "${ProjectName}-api" },
         "Cpu": "256",
         "Memory": "512",
         "NetworkMode": "awsvpc",
@@ -132,12 +137,28 @@
         }]
       }
     },
+    "ScheduledTaskDefinition": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": { "Fn::Sub": "${ProjectName}-batch" },
+        "Cpu": "256", 
+        "Memory": "512",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": ["FARGATE"],
+        "ExecutionRoleArn": { "Fn::GetAtt": ["IAMRoleEcsExecution", "Arn"] },
+        "ContainerDefinitions": [{
+          "Name": "batch-app",
+          "Image": { "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ProjectName}:latest" },
+          "Command": ["python", "app/batch/main.py"]
+        }]
+      }
+    },
     "ECSService": {
       "Type": "AWS::ECS::Service",
       "Properties": {
         "ServiceName": { "Fn::Sub": "${ProjectName}-service" }, 
         "Cluster": { "Ref": "ECSCluster" },
-        "TaskDefinition": { "Ref": "ECSTaskDefinition" },
+        "TaskDefinition": { "Ref": "ApiTaskDefinition" },
         "LaunchType": "FARGATE",
         "DesiredCount": 1,
         "NetworkConfiguration": {
@@ -147,6 +168,49 @@
             "SecurityGroups": [{ "Ref": "EC2SecurityGroup" }]
           }
         }
+      }
+    },
+    "EventsInvokeEcsRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{ "Effect": "Allow", "Principal": { "Service": "events.amazonaws.com" }, "Action": "sts:AssumeRole" }]
+        },
+        "Policies": [{
+          "PolicyName": "InvokeEcsTask",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              { "Effect": "Allow", "Action": "ecs:RunTask", "Resource": { "Ref": "ScheduledTaskDefinition" } },
+              { "Effect": "Allow", "Action": "iam:PassRole", "Resource": { "Fn::GetAtt": ["IAMRoleEcsExecution", "Arn"] } }
+            ]
+          }
+        }]
+      }
+    },
+    "ScheduledTaskRule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "Description": "Trigger periodic batch task",
+        "ScheduleExpression": { "Ref": "ScheduleExpression" },
+        "State": "ENABLED",
+        "Targets": [{
+          "Id": "ScheduledTask",
+          "Arn": { "Fn::GetAtt": ["ECSCluster", "Arn"] },
+          "RoleArn": { "Fn::GetAtt": ["EventsInvokeEcsRole", "Arn"] },
+          "EcsParameters": {
+            "TaskDefinitionArn": { "Ref": "ScheduledTaskDefinition" },
+            "LaunchType": "FARGATE",
+            "NetworkConfiguration": {
+              "AwsVpcConfiguration": {
+                "Subnets": [{ "Ref": "EC2Subnet" }],
+                "SecurityGroups": [{ "Ref": "EC2SecurityGroup" }],
+                "AssignPublicIp": "ENABLED"
+              }
+            }
+          }
+        }]
       }
     }
   }

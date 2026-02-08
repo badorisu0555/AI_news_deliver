@@ -60,9 +60,16 @@ def clean_html(html, strip=False):
     text = soup.get_text(strip=strip)
     return text
 
-with open('RSS.json') as f:
-    RSS_list= json.load(f)
+def get_news():
+    with open('RSS.json') as f:
+        RSS_list= json.load(f)
+
+    news_df = get_news_data(RSS_list)
+    if 'summary' in news_df.columns:
+        news_df["summary"] = news_df["summary"].apply(lambda x: clean_html(x, strip=True))
+    else:
+        print("Warning: 'summary' column is missing.")
+    return news_df
 
 if __name__ == "__main__":
-    news_df = get_news_data(RSS_list)
-    news_df["summary"] = news_df["summary"].apply(lambda x: clean_html(x,strip=True))
+    get_news()

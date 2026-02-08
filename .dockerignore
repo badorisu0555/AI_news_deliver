@@ -2,7 +2,6 @@
 .gitignore
 docker-compose.yml
 Dockerfile
-readme.md
 __pycache__/
 venv/
 
@@ -11,3 +10,5 @@ sample_app.py
 
 template/
 no-use/
+
+.env

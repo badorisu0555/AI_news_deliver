@@ -44,26 +44,43 @@ jobs:
           # 次のステップにイメージの場所を伝える
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      # 2. 既存のタスク定義をAWSから取得してファイルにする
-      - name: Download task definition
+# 2. 既存のタスク定義（API用とバッチ用の両方）をAWSから取得
+      - name: Download task definitions
         run: |
-          # test-project の部分はご自身の「タスク定義ファミリー名」に変えてください
-          aws ecs describe-task-definition --task-definition test-project --query taskDefinition > task-definition.json
+          # API用のタスク定義を取得
+          aws ecs describe-task-definition --task-definition ${{ env.ECR_REPOSITORY }}-api --query taskDefinition > api-task-def.json
+          # バッチ用のタスク定義を取得
+          aws ecs describe-task-definition --task-definition ${{ env.ECR_REPOSITORY }}-batch --query taskDefinition > batch-task-def.json
 
-      # 3. ファイル内の「イメージ名」を最新のものに書き換える
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
+      # 3. 両方のファイル内の「イメージ名」を最新のものに書き換える
+      - name: Fill in the new image ID in the API task definition
+        id: render-api-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition.json
-          container-name: app # CloudFormationで決めたコンテナ名
+          task-definition: api-task-def.json
+          container-name: app
           image: ${{ steps.build-image.outputs.image }}
 
-      # 4. ECSサービスを更新（デプロイ）
-      - name: Deploy Amazon ECS task definition
+      - name: Fill in the new image ID in the Batch task definition
+        id: render-batch-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: batch-task-def.json
+          container-name: batch-app
+          image: ${{ steps.build-image.outputs.image }}
+
+      # 4. デプロイ（APIはサービス更新、バッチは新しい定義の登録のみ）
+      - name: Deploy API Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: test-project-service  # CloudFormationで作成したサービス名
-          cluster: test-project  # CloudFormationで作成したクラスター名
+          task-definition: ${{ steps.render-api-task-def.outputs.task-definition }}
+          service: ${{ env.ECR_REPOSITORY }}-service
+          cluster: ${{ env.ECR_REPOSITORY }}
           wait-for-service-stability: true
+
+      - name: Register New Batch Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-batch-task-def.outputs.task-definition }}
+          # バッチは「サービス」ではないので、service/clusterを指定せず登録のみ行う
+          # これにより、EventBridgeが参照する「最新(latest)」の定義が更新されます

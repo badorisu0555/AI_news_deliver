@@ -27,10 +27,17 @@ class TestApiHealthCheck:
 class TestGetDynamoData:
     """Tests for get_dynamo_data function"""
     
+    @patch("app.api.get_dynamod_data.boto3.client")
     @patch("app.api.get_dynamod_data.boto3.resource")
-    def test_get_dynamo_data_success(self, mock_boto3_resource):
+    def test_get_dynamo_data_success(self, mock_resource, mock_client):
         """Test successful data retrieval from DynamoDB"""
+        # Mock dynamodb resource
+        mock_dynamodb = MagicMock()
+        mock_resource.return_value = mock_dynamodb
+        
         mock_table = MagicMock()
+        mock_dynamodb.Table.return_value = mock_table
+        
         mock_response = {
             'Items': [
                 {
@@ -44,7 +51,6 @@ class TestGetDynamoData:
             ]
         }
         mock_table.query.return_value = mock_response
-        mock_boto3_resource.return_value.Table.return_value = mock_table
         
         result = get_dynamo_data(days=7, table_name='test-project')
         
@@ -53,23 +59,34 @@ class TestGetDynamoData:
         assert result[0]['title'] == 'Test News'
         mock_table.query.assert_called_once()
     
+    @patch("app.api.get_dynamod_data.boto3.client")
     @patch("app.api.get_dynamod_data.boto3.resource")
-    def test_get_dynamo_data_empty_result(self, mock_boto3_resource):
+    def test_get_dynamo_data_empty_result(self, mock_resource, mock_client):
         """Test when no items are found in DynamoDB"""
+        mock_dynamodb = MagicMock()
+        mock_resource.return_value = mock_dynamodb
+        
         mock_table = MagicMock()
+        mock_dynamodb.Table.return_value = mock_table
+        
         mock_response = {'Items': []}
         mock_table.query.return_value = mock_response
-        mock_boto3_resource.return_value.Table.return_value = mock_table
         
         result = get_dynamo_data(days=7, table_name='test-project')
         
         assert isinstance(result, list)
         assert len(result) == 0
     
+    @patch("app.api.get_dynamod_data.boto3.client")
     @patch("app.api.get_dynamod_data.boto3.resource")
-    def test_get_dynamo_data_multiple_items(self, mock_boto3_resource):
+    def test_get_dynamo_data_multiple_items(self, mock_resource, mock_client):
         """Test retrieval of multiple items from DynamoDB"""
+        mock_dynamodb = MagicMock()
+        mock_resource.return_value = mock_dynamodb
+        
         mock_table = MagicMock()
+        mock_dynamodb.Table.return_value = mock_table
+        
         mock_response = {
             'Items': [
                 {'id': '001', 'title': 'News 1', 'published_datetime': 1234567890},
@@ -78,7 +95,6 @@ class TestGetDynamoData:
             ]
         }
         mock_table.query.return_value = mock_response
-        mock_boto3_resource.return_value.Table.return_value = mock_table
         
         result = get_dynamo_data(days=7, table_name='test-project')
         
@@ -86,13 +102,18 @@ class TestGetDynamoData:
         assert result[0]['title'] == 'News 1'
         assert result[2]['title'] == 'News 3'
     
+    @patch("app.api.get_dynamod_data.boto3.client")
     @patch("app.api.get_dynamod_data.boto3.resource")
-    def test_get_dynamo_data_custom_days(self, mock_boto3_resource):
+    def test_get_dynamo_data_custom_days(self, mock_resource, mock_client):
         """Test with custom days parameter"""
+        mock_dynamodb = MagicMock()
+        mock_resource.return_value = mock_dynamodb
+        
         mock_table = MagicMock()
+        mock_dynamodb.Table.return_value = mock_table
+        
         mock_response = {'Items': []}
         mock_table.query.return_value = mock_response
-        mock_boto3_resource.return_value.Table.return_value = mock_table
         
         result = get_dynamo_data(days=30, table_name='test-project')
         
@@ -100,9 +121,9 @@ class TestGetDynamoData:
         mock_table.query.assert_called_once()
     
     @patch("app.api.get_dynamod_data.boto3.resource")
-    def test_get_dynamo_data_exception(self, mock_boto3_resource):
+    def test_get_dynamo_data_exception(self, mock_resource):
         """Test exception handling in get_dynamo_data"""
-        mock_boto3_resource.side_effect = Exception("DynamoDB connection failed")
+        mock_resource.side_effect = Exception("DynamoDB connection failed")
         
         with pytest.raises(Exception, match="DynamoDB connection failed"):
             get_dynamo_data(days=7, table_name='test-project')
@@ -202,9 +223,9 @@ class TestSummarizeNewsWithLLM:
 class TestPredictEndpoint:
     """Tests for /predict endpoint"""
     
-    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
     @patch("app.api.main.news_summary.summarize_news_with_LLM")
-    def test_predict_endpoint_success(self, mock_summarize, mock_get_data):
+    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
+    def test_predict_endpoint_success(self, mock_get_data, mock_summarize):
         """Test successful prediction endpoint"""
         mock_get_data.return_value = [
             {
@@ -221,9 +242,9 @@ class TestPredictEndpoint:
         mock_get_data.assert_called_once()
         mock_summarize.assert_called_once()
     
-    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
     @patch("app.api.main.news_summary.summarize_news_with_LLM")
-    def test_predict_endpoint_with_custom_days(self, mock_summarize, mock_get_data):
+    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
+    def test_predict_endpoint_with_custom_days(self, mock_get_data, mock_summarize):
         """Test prediction endpoint with custom days parameter"""
         mock_get_data.return_value = []
         mock_summarize.return_value = '{"result": "no data"}'
@@ -245,9 +266,9 @@ class TestPredictEndpoint:
         assert "error" in data
         assert "Database error" in data["error"]
     
-    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
     @patch("app.api.main.news_summary.summarize_news_with_LLM")
-    def test_predict_endpoint_summarize_exception(self, mock_summarize, mock_get_data):
+    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
+    def test_predict_endpoint_summarize_exception(self, mock_get_data, mock_summarize):
         """Test error handling when summarization fails"""
         mock_get_data.return_value = [{'title': 'Test', 'link': 'https://example.com'}]
         mock_summarize.side_effect = Exception("LLM error")
@@ -259,9 +280,9 @@ class TestPredictEndpoint:
         assert "error" in data
         assert "LLM error" in data["error"]
     
-    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
     @patch("app.api.main.news_summary.summarize_news_with_LLM")
-    def test_predict_endpoint_with_table_name_param(self, mock_summarize, mock_get_data):
+    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
+    def test_predict_endpoint_with_table_name_param(self, mock_get_data, mock_summarize):
         """Test prediction endpoint with custom table name"""
         mock_get_data.return_value = []
         mock_summarize.return_value = '{"result": "success"}'
@@ -276,9 +297,9 @@ class TestPredictEndpoint:
 class TestNewsDataIntegration:
     """Integration tests for news data flow through API"""
     
-    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
     @patch("app.api.main.news_summary.summarize_news_with_LLM")
-    def test_full_api_pipeline(self, mock_summarize, mock_get_data):
+    @patch("app.api.main.get_dynamod_data.get_dynamo_data")
+    def test_full_api_pipeline(self, mock_get_data, mock_summarize):
         """Test complete API pipeline from data retrieval to summarization"""
         # Mock data from DynamoDB
         mock_get_data.return_value = [

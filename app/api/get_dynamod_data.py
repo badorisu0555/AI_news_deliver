@@ -10,9 +10,9 @@ def get_dynamo_data(days=7, table_name='test-project'):
     START_TIME = int(ut - days*24*60*60) # 7日間の範囲指定
     END_TIME = int(ut) #現在の時間
 
-    client = boto3.client('dynamodb')
+    client = boto3.client('dynamodb', region_name='ap-northeast-1')
     dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
-    table = boto3.resource('dynamodb').Table(table_name)
+    table = dynamodb.Table(table_name)
 
     response = table.query(
         IndexName = "published_datetime",

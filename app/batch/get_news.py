@@ -49,7 +49,7 @@ def get_news_data(RSS_list):
         id_2 = 0
         id_3 = 1
         for entry in feed.entries[0:1]:
-            parse_text(entry,today,id_1,id_2,id_3,category,news_df)
+            news_df, id_2, id_3 = parse_text(entry,today,id_1,id_2,id_3,category,news_df)
         id_1 += 1
 
     return news_df

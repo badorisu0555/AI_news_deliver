@@ -10,6 +10,25 @@ env:
   ECR_REPOSITORY: test-project  #ECRリポジトリ名を指定
  
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository # ソースコードを取得
+      uses: actions/checkout@v4 
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run tests
+      run: pytest
+
+
   build-and-push:
     runs-on: ubuntu-latest
     permissions:

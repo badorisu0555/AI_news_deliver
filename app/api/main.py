@@ -1,7 +1,5 @@
-#import app.api.get_dynamod_data as get_dynamod_data
-#import app.api.news_summary as news_summary
-import get_dynamod_data as get_dynamod_data
-import news_summary as news_summary
+from app.api import get_dynamod_data
+from app.api import news_summary
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 

@@ -112,6 +112,35 @@
         }]
       }
     },
+    "IAMRoleEcsTask": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{ "Effect": "Allow", "Principal": { "Service": "ecs-tasks.amazonaws.com" }, "Action": "sts:AssumeRole" }]
+        },
+        "Policies": [{
+          "PolicyName": "DynamoDBReadWritePolicy",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:PutItem",
+                "dynamodb:GetItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:Query",
+                "dynamodb:Scan"
+              ],
+              "Resource": [
+                { "Fn::Sub": "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*" }
+              ]
+            }]
+          }
+        }]
+      }
+    },
     "ECSCluster": {
       "Type": "AWS::ECS::Cluster",
       "Properties": {
@@ -127,6 +156,7 @@
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": ["FARGATE"],
         "ExecutionRoleArn": { "Fn::GetAtt": ["IAMRoleEcsExecution", "Arn"] },
+        "TaskRoleArn": { "Fn::GetAtt": ["IAMRoleEcsTask", "Arn"] },
         "ContainerDefinitions": [{
           "Name": "app",
           "Image": { "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ProjectName}:latest" },
@@ -146,6 +176,7 @@
         "NetworkMode": "awsvpc",
         "RequiresCompatibilities": ["FARGATE"],
         "ExecutionRoleArn": { "Fn::GetAtt": ["IAMRoleEcsExecution", "Arn"] },
+        "TaskRoleArn": { "Fn::GetAtt": ["IAMRoleEcsTask", "Arn"] },
         "ContainerDefinitions": [{
           "Name": "batch-app",
           "Image": { "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ProjectName}:latest" },

@@ -103,7 +103,7 @@
             "Version": "2012-10-17",
             "Statement": [{ 
               "Effect": "Allow", 
-              "Action": ["ssm:GetParameters"], 
+              "Action": ["ssm:GetParameters", "ssm:GetParameter"], 
               "Resource": [
                 { "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/*" }
               ] 
@@ -162,7 +162,7 @@
           "Image": { "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ProjectName}:latest" },
           "PortMappings": [{ "ContainerPort": 80 }],
           "Secrets": [
-            { "Name": "Bedrock_API_Key", "ValueFrom": { "Ref": "BedrockApiKeyParam" } }
+            { "Name": "Bedrock_API_Key", "ValueFrom": { "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/Bedrock_API_Key" } }
           ]
         }]
       }

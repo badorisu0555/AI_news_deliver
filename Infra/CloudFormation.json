@@ -4,11 +4,11 @@
   "Parameters": {
     "ProjectName": {
       "Type": "String",
-      "Default": "test-project"
+      "Default": "ai_news"
     },
     "ScheduleExpression": {
       "Type": "String",
-      "Default": "cron(0 1 1 * ? *)",
+      "Default": "cron(0 0 * * ? *)",
       "Description": "Schedule for the batch task (UTC)"
     }
   },
@@ -83,7 +83,7 @@
         "GroupDescription": "Allow HTTP",
         "VpcId": { "Ref": "EC2VPC" },
         "SecurityGroupIngress": [
-          { "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "CidrIp": "61.21.197.84/32" }
+          { "IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "CidrIp": "0.0.0.0/0" }
         ]
       }
     },

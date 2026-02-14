@@ -11,7 +11,7 @@ def read_root():
     return {"message": "AI news summary API healthy", "status": "healthy"}
 
 @app.get("/predict")
-def main(days=7,table_name='test-project'):
+def main(days=7,table_name='ai_news'):
     try:
         print("=======================ニュースデータの取得を開始します。=======================")
         news_data = get_dynamod_data.get_dynamo_data(days=days, table_name=table_name)

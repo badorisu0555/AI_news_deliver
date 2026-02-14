@@ -1,6 +1,6 @@
 import boto3
 
-TABLE_NAME = "test-project"
+TABLE_NAME = "ai_news"
 
 dynamodb_client = boto3.client("dynamodb")
 

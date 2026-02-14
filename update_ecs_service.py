@@ -3,8 +3,8 @@ import boto3
 def update_ecs_service():
     client = boto3.client('ecs', region_name='ap-northeast-1')
 
-    cluster_name = "test-project"
-    service_name = "test-project-service"
+    cluster_name = "ai_news"
+    service_name = "ai_news-service"
 
     print(f"Updating service {service_name} in cluster {cluster_name}...")
 

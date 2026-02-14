@@ -7,8 +7,8 @@ import os
 from dotenv import load_dotenv
 
 def load_api_key():
-    # override=False にすることで、OS環境変数が既に設定されている場合はそれを優先します
-    env_path = os.path.join(os.path.dirname(__file__), "../../.env", override=False)
+    # override=True にすることで、.env のセットアップが既存の環境変数を上書きします
+    env_path = os.path.join(os.path.dirname(__file__), "../../.env")
     load_dotenv(dotenv_path=env_path, override=True)
     os.environ["AWS_BEARER_TOKEN_BEDROCK"] = os.getenv("Bedrock_API_Key")
 

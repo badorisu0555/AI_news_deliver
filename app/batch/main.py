@@ -4,6 +4,6 @@ from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 
 news_df = get_news.get_news()
-dynamo_write.dynamo_batch_write(news_df, table_name='test-project')
+dynamo_write.dynamo_batch_write(news_df, table_name='ai_news')
 print(news_df)
 print("DynamoDBへの書き込みが完了しました。")

@@ -29,7 +29,7 @@ if __name__ == "__main__":
         'content': ['Content 1', 'Content 2'],
     }
     news_df = pd.DataFrame(sample_data)
-    table_name = 'test-table'
+    table_name = 'ai_news'
     dynamo_batch_write(news_df, table_name, region_name='ap-northeast-1')
 
 # 動作確認

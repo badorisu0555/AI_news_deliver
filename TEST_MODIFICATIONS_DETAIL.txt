@@ -1,0 +1,338 @@
+# AI_news プロジェクト - テスト実装と修正履歴
+
+## 概要
+このドキュメントは、AI_newsプロジェクトにテストを導入する過程で、メイン実装コードに加えた修正内容を詳細に記録したものです。テストの実行を通じて発見されたバグと、それに対する修正が実装されました。
+
+---
+
+## 1. app/api/news_summary.py の修正
+
+### 問題点
+500 Internal Server Errorが発生していました。原因は相対パスでファイルを読み込もうとしていたためです。
+
+### 修正箇所1: .envファイルのパス指定
+
+**修正前：**
+```python
+def load_api_key():
+    load_dotenv(dotenv_path="../.env", override=True)
+    os.environ["AWS_BEARER_TOKEN_BEDROCK"] = os.getenv("Bedrock_API_Key")
+```
+
+**修正後：**
+```python
+def load_api_key():
+    env_path = os.path.join(os.path.dirname(__file__), "../../.env")
+    load_dotenv(dotenv_path=env_path, override=True)
+    os.environ["AWS_BEARER_TOKEN_BEDROCK"] = os.getenv("Bedrock_API_Key")
+```
+
+**解説：**
+- 相対パス（`../`）はAPIサーバーの実行ディレクトリに依存します
+- `__file__`を使用することで、スクリプトがどこから実行されても正確なパスを指定できます
+- `os.path.dirname(__file__)`は`app/api/`ディレクトリを指し、そこから`../../.env`でプロジェクトルートの.envに到達します
+
+### 修正箇所2: prompt.txtファイルのパス指定
+
+**修正前：**
+```python
+def summarize_news_with_LLM(news_data):
+    load_api_key()
+    f = open("prompt.txt","r",encoding="utf-8")
+    prompt_text = f.read()
+    ...
+```
+
+**修正後：**
+```python
+def summarize_news_with_LLM(news_data):
+    load_api_key()
+    prompt_path = os.path.join(os.path.dirname(__file__), "prompt.txt")
+    f = open(prompt_path,"r",encoding="utf-8")
+    prompt_text = f.read()
+    ...
+```
+
+**解説：**
+- `prompt.txt`は`app/api/`ディレクトリに存在するため、同じディレクトリのパスで参照します
+- 絶対パス化により、実行誤執からの相対位置に依存しません
+
+---
+
+## 2. app/batch/get_news.py の修正
+
+### 問題点
+テストで`get_news()`関数を実行しても空のDataFrameが返されていました。
+
+### 原因の特定
+関数`parse_text()`が戻り値（修正されたDataFrameとカウンタ）を返していますが、呼び出し元がそれを受け取っていませんでした。
+
+### 修正内容
+
+**修正前：**
+```python
+def get_news_data(RSS_list):
+    id_1 = 1
+    today = datetime.now().strftime("%Y%m%d")
+    category = "AI_news"
+    news_df = pd.DataFrame()
+
+    for url in RSS_list:
+        feed = feedparser.parse(url)
+        id_2 = 0
+        id_3 = 1
+        for entry in feed.entries[0:1]:
+            parse_text(entry,today,id_1,id_2,id_3,category,news_df)  # ❌ 戻り値を受け取っていない
+        id_1 += 1
+
+    return news_df
+```
+
+**修正後：**
+```python
+def get_news_data(RSS_list):
+    id_1 = 1
+    today = datetime.now().strftime("%Y%m%d")
+    category = "AI_news"
+    news_df = pd.DataFrame()
+
+    for url in RSS_list:
+        feed = feedparser.parse(url)
+        id_2 = 0
+        id_3 = 1
+        for entry in feed.entries[0:1]:
+            news_df, id_2, id_3 = parse_text(entry,today,id_1,id_2,id_3,category,news_df)  # ✅ 戻り値を受け取る
+        id_1 += 1
+
+    return news_df
+```
+
+**解説：**
+- `parse_text()`関数内で`pd.concat()`で新しいDataFrameを作成し、それを返しています
+- 戻り値を受け取らないと、元のDataFrameのままで新しいデータが追加されません
+- `id_2`と`id_3`も戻り値に含まれているため、これらも受け取る必要があります
+
+---
+
+## 3. app/api/main.py のインポート修正
+
+### 問題点
+テスト実行時に`ModuleNotFoundError: No module named 'get_dynamod_data'`が発生していました。
+
+### 原因
+相対インポートのため、スクリプトのどこから実行されているかに依存し、Pythonパスが正しく設定されていませんでした。
+
+### 修正内容
+
+**修正前：**
+```python
+#import app.api.get_dynamod_data as get_dynamod_data
+#import app.api.news_summary as news_summary
+import get_dynamod_data as get_dynamod_data  # ❌ 相対インポート
+import news_summary as news_summary           # ❌ 相対インポート
+from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
+```
+
+**修正後：**
+```python
+from app.api import get_dynamod_data  # ✅ 絶対インポート
+from app.api import news_summary      # ✅ 絶対インポート
+from fastapi import FastAPI, Query
+from fastapi.responses import JSONResponse
+```
+
+**解説：**
+- 相対インポートから絶対インポートに変更
+- パッケージ構造（app.api.get_dynamod_data）を明示的に指定することで、Pythonに正確に解釈されます
+- テスト環境では特に重要です
+
+---
+
+## 4. app/api/get_dynamod_data.py の修正
+
+### 問題点
+テスト実行時に`botocore.exceptions.NoRegionError: You must specify a region.`エラーが発生していました。
+
+### 原因
+DynamoDB接続時にAWSリージョンが指定されていませんでした。
+
+### 修正内容
+
+**修正前：**
+```python
+def get_dynamo_data(days=7, table_name='test-project'):
+    ut = time.time()
+    START_TIME = int(ut - days*24*60*60)
+    END_TIME = int(ut)
+
+    client = boto3.client('dynamodb')  # ❌ リージョンなし
+    dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
+    table = boto3.resource('dynamodb').Table(table_name)  # ❌ リージョンなし
+```
+
+**修正後：**
+```python
+def get_dynamo_data(days=7, table_name='test-project'):
+    ut = time.time()
+    START_TIME = int(ut - days*24*60*60)
+    END_TIME = int(ut)
+
+    client = boto3.client('dynamodb', region_name='ap-northeast-1')  # ✅ リージョン追加
+    dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
+    table = dynamodb.Table(table_name)  # ✅ dynamodbから参照
+```
+
+**解説：**
+- すべてのboto3呼び出しに`region_name='ap-northeast-1'`を明示的に指定
+- `boto3.resource('dynamodb')`と`boto3.resource('dynamodb').Table()`の二重呼び出しを統一
+- 本番環境ではAWS_DEFAULTリージョンなどの環境変数から読み込むことも検討可能
+
+---
+
+## 5. conftest.py のパス指定修正
+
+### 問題点
+テスト実行時に`ModuleNotFoundError: No module named 'app'`が発生していました。
+
+### 原因
+パスを1階層多く上げてしまっていました。
+
+### 修正内容
+
+**修正前：**
+```python
+import sys
+from pathlib import Path
+
+# プロジェクトルートをPythonパスに追加
+project_root = Path(__file__).parent.parent  # ❌ Downloads階層になってしまう
+sys.path.insert(0, str(project_root))
+```
+
+**修正後：**
+```python
+import sys
+from pathlib import Path
+
+# プロジェクトルートをPythonパスに追加
+project_root = Path(__file__).parent  # ✅ AI_news階層
+sys.path.insert(0, str(project_root))
+```
+
+**解説：**
+- `conftest.py`はプロジェクトルート（AI_news/）に配置されているため、`parent.parent`は不要です
+- `Path(__file__).parent`でAI_newsディレクトリを指し、そこをPythonパスに追加することで、`app`モジュールが認識されます
+
+---
+
+## 6. パッケージ初期化ファイルの作成
+
+### 作成したファイル
+- `app/__init__.py`
+- `app/batch/__init__.py`
+- `app/api/__init__.py`
+- `tests/__init__.py`
+
+### 内容
+各ファイルは最小限のコンテンツで、パッケージとして認識させるためのファイルです：
+
+```python
+# App package
+```
+
+### なぜ必要か
+Python 3.3以前のレガシーコードを考慮する場合は必須ですが、Python 3.3以降はNamespace Packagesで動作します。しかし、明示的に`__init__.py`を配置することで、以下のメリットがあります：
+
+1. **IDE/エディタの補完**が正確に機能
+2. **パッケージ構造が明確**になる
+3. **将来的に`__all__`定義など追加可能**
+
+---
+
+## 修正の影響範囲
+
+### 直接修正されたファイル
+1. `app/api/news_summary.py` - パス指定の絶対化
+2. `app/batch/get_news.py` - 戻り値取得ロジック修正
+3. `app/api/main.py` - インポート文の変更
+4. `app/api/get_dynamod_data.py` - AWSリージョン指定追加
+5. `conftest.py` - パス計算の修正
+
+### 新規作成されたファイル
+1. `conftest.py` - Pythonパス設定
+2. `app/__init__.py` - パッケージマーカー
+3. `app/batch/__init__.py` - パッケージマーカー
+4. `app/api/__init__.py` - パッケージマーカー
+5. `tests/__init__.py` - パッケージマーカー
+6. `tests/test_batch_main.py` - バッチ処理テスト（10テスト）
+7. `tests/test_api_main.py` - API テスト（16テスト）
+
+---
+
+## テスト実装による効果
+
+### 発見されたバグ
+1. **相対パスの硬直性** - ファイル参照が実行ディレクトリに依存していた
+2. **戻り値の未処理** - DataFrameの更新が反映されていなかった
+3. **インポートの曖昧性** - モジュールが見つからないエラーが散在
+4. **AWS設定の不完全性** - リージョン未指定が実行時に発覚
+
+### テスト導入後の改善
+- ✅ 絶対パス化により、どこから実行してもコードが動作
+- ✅ 戻り値処理の修正により、データが正確に処理される
+- ✅ 明示的なインポートでエラーが減少
+- ✅ AWS呼び出しの安定性向上
+
+---
+
+## 推奨事項
+
+### 今後のメンテナンス
+1. **環境変数の活用** - パスやAWSリージョンを環境変数で管理
+2. **ロギングの強化** - エラー追跡が容易になります
+3. **型ヒントの追加** - mypy等の静的解析が可能になります
+4. **CI/CDパイプライン** - commit時に自動テスト実行
+
+### テストの拡張
+- 現在: 26テスト
+- バッチ処理: RSS取得、DynamoDB書き込み、HTML解析
+- API: DynamoDB取得、LLM要約、エラーハンドリング
+
+---
+
+## テスト実行方法
+
+```bash
+# 全テスト実行
+pytest tests/ -v
+
+# 特定モジュールのテスト
+pytest tests/test_batch_main.py -v
+pytest tests/test_api_main.py -v
+
+# カバレッジレポート生成
+pytest tests/ --cov=app --cov-report=html
+
+# 詳細なログ出力
+pytest tests/ -vv -s
+
+# 失敗したテストを最初に実行
+pytest tests/ -v --ff
+```
+
+---
+
+## まとめ
+
+テスト導入を通じて、以下の改善が実現されました：
+
+| カテゴリ | 修正内容 | 効果 |
+|---------|---------|------|
+| **ファイルI/O** | 相対→絶対パス | 実行ディレクトリに依存しない |
+| **データ処理** | 戻り値取得 | 正確なデータフロー |
+| **インポート** | 相対→絶対インポート | モジュール解決の確実性 |
+| **AWS接続** | リージョン指定 | 実行時エラーの削減 |
+| **テスト体制** | ユニット/統合テスト | 継続的な品質保証 |
+
+これらの修正により、プロジェクトの堅牢性と保守性が大幅に向上しました。

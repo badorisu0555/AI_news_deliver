@@ -1,7 +1,5 @@
-#import app.batch.dynamo_write as dynamo_write
-#import app.batch.get_news as get_news
-import dynamo_write as dynamo_write
-import get_news as get_news
+import app.batch.dynamo_write as dynamo_write
+import app.batch.get_news as get_news
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 

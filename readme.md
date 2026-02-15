@@ -98,5 +98,5 @@ JSON形式で「カテゴリごとのサマリーと対象記事」を提示
 https://note.com/manyamam/n/n05fc8f66886a<br>
 https://note.com/eurekachan/n/n0c1c1b8793e2
 
-## やりたいけどRSSがない
+### やりたいけどRSSがない
 https://ai-media-bsg.com/

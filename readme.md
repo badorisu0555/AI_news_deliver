@@ -67,15 +67,36 @@ JSON形式で「カテゴリごとのサマリーと対象記事」を提示
 
 ```
 
-## RSSフィードの参考URL
+## RSSデータソース定義
+
+各ソースの特性に基づき、収集の重み付けや解析優先度を最適化するためのマスターリストです。
+
+| ID | サイト名 / 運営組織 | カテゴリ | RSSフィードURL |
+| :--- | :--- | :--- | :--- |
+| 01 | OpenAI News | Model Provider | `https://openai.com/news/rss.xml` |
+| 02 | Google Cloud Blog | Cloud Platform | `https://cloudblog.withgoogle.com/rss/` |
+| 03 | AWS News Blog (JP) | Cloud Platform | `https://aws.amazon.com/jp/blogs/aws/feed/` |
+| 04 | Google Developers Japan | Engineering | `https://developers-jp.googleblog.com/atom.xml` |
+| 05 | Mercari Engineering | Tech Blog (Domestic) | `https://engineering.mercari.com/blog/feed.xml` |
+| 06 | CyberAgent Developers | Tech Blog (Domestic) | `https://developers.cyberagent.co.jp/blog/feed/` |
+| 07 | AI Shift Tech Blog | Tech Blog (Domestic) | `https://www.ai-shift.co.jp/techblog/feed` |
+| 08 | Recruit Tech Blog | Tech Blog (Domestic) | `https://recruit-tech.co.jp/blog/feed/` |
+| 09 | BrainPad Platinum Data Blog | Tech Blog (Consulting) | `https://blog.brainpad.co.jp/rss` |
+| 10 | Zenn (Topic: LLM) | Community | `https://zenn.dev/topics/llm/feed` |
+| 11 | ITmedia AI+ | Media | `https://rss.itmedia.co.jp/rss/2.0/aiplus.xml` |
+| 12 | ＠IT (Build IT) | Media | `https://atmarkit.itmedia.co.jp/rss/rss.xml` |
+| 13 | Medium (@kyakuno) | Expert Blog | `https://medium.com/feed/@kyakuno` |
+| 14 | Hugging Face Daily Papers | Research (OSS) | `https://rsshub.app/huggingface/daily-papers` |
+| 15 | Preferred Networks Research | Research (Domestic) | `https://research.preferred.jp/feed/` |
+| 16 | Google Search Central Blog | SEO/Marketing | `https://feeds.feedburner.com/blogspot/gJZg` |
+| 17 | PyTorch Blog | Library/Framework | `https://pytorch.org/feed.xml` |
+| 18 | DeepLearning.AI (The Batch) | Education/Trend | `https://www.deeplearning.ai/the-batch/rss` |
+| 19 | MIT Technology Review (JP) | Scientific Media | `https://www.technologyreview.jp/feed/` |
+
+
+### RSSフィードの参考URL
 https://note.com/manyamam/n/n05fc8f66886a<br>
 https://note.com/eurekachan/n/n0c1c1b8793e2
 
 ## やりたいけどRSSがない
 https://ai-media-bsg.com/
-
-## DynamoDBの参考記事
-https://maku.blog/p/wht5epz/<br>
-：　DynamoDB テーブルにアイテムを追加する
-https://qtatsu.hatenablog.com/entry/2020/07/12/021428<br>
-：　DynamoDBのバッチ処理

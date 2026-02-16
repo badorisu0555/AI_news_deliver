@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from datetime import datetime
 from bs4 import BeautifulSoup
+import os
 
 def parse_text(entry,today,id_1,id_2,id_3,category,news_df):
     # published_parsedをintオブジェクトに変換
@@ -61,8 +62,14 @@ def clean_html(html, strip=False):
     return text
 
 def get_news():
-    with open('RSS.json') as f:
-        RSS_list= json.load(f)
+# 1. このスクリプト(get_news.py)が存在するディレクトリの絶対パスを取得
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    # 2. RSS.jsonへの絶対パスを生成
+    json_path = os.path.join(base_dir, 'RSS.json')
+
+    # 生成したパスでファイルを開く
+    with open(json_path, encoding='utf-8') as f:
+        RSS_list = json.load(f)
 
     news_df = get_news_data(RSS_list)
     if 'summary' in news_df.columns:

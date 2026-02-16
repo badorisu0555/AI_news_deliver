@@ -1,6 +1,6 @@
 import requests
 
-url = "http://18.183.68.191:80/predict"
+url = "http://18.183.228.89:80/predict"
 
 res = requests.get(url)
 #print(res.status_code)

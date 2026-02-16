@@ -109,7 +109,25 @@
               ] 
             }]
           }
-        }]
+        },
+        {
+            "PolicyName": "CloudWatchLogsWritePolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [{
+                "Effect": "Allow",
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents",
+                  "logs:DescribeLogStreams"
+                ],
+                "Resource": [
+                  { "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/ecs/${ProjectName}*:*" }
+                ]
+              }]
+            }
+         }     
+      ]
       }
     },
     "IAMRoleEcsTask": {
@@ -161,6 +179,15 @@
           "Name": "app",
           "Image": { "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ProjectName}:latest" },
           "PortMappings": [{ "ContainerPort": 80 }],
+          "LogConfiguration": {
+            "LogDriver": "awslogs",
+            "Options": {
+              "awslogs-group": { "Fn::Sub": "/ecs/${ProjectName}-api" },
+              "awslogs-region": { "Ref": "AWS::Region" },
+              "awslogs-stream-prefix": "ecs",
+              "awslogs-create-group": "true"
+            }
+          },  
           "Secrets": [
             { "Name": "Bedrock_API_Key", "ValueFrom": { "Fn::Sub": "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/Bedrock_API_Key" } }
           ]
@@ -180,7 +207,16 @@
         "ContainerDefinitions": [{
           "Name": "batch-app",
           "Image": { "Fn::Sub": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ProjectName}:latest" },
-          "Command": ["python", "app/batch/main.py"]
+          "Command": ["python", "app/batch/main.py"],
+          "LogConfiguration": {
+            "LogDriver": "awslogs",
+            "Options": {
+              "awslogs-group": { "Fn::Sub": "/ecs/${ProjectName}-batch" },
+              "awslogs-region": { "Ref": "AWS::Region" },
+              "awslogs-stream-prefix": "ecs",
+              "awslogs-create-group": "true"
+            }
+          }
         }]
       }
     },
@@ -213,8 +249,19 @@
           "PolicyDocument": {
             "Version": "2012-10-17",
             "Statement": [
-              { "Effect": "Allow", "Action": "ecs:RunTask", "Resource": { "Ref": "ScheduledTaskDefinition" } },
-              { "Effect": "Allow", "Action": "iam:PassRole", "Resource": { "Fn::GetAtt": ["IAMRoleEcsExecution", "Arn"] } }
+              { 
+                "Effect": "Allow", 
+                "Action": "ecs:RunTask", 
+                "Resource": { "Ref": "ScheduledTaskDefinition" } 
+              },
+              { 
+                "Effect": "Allow", 
+                "Action": "iam:PassRole", 
+                "Resource": [
+                  { "Fn::GetAtt": ["IAMRoleEcsExecution", "Arn"] },
+                  { "Fn::GetAtt": ["IAMRoleEcsTask", "Arn"] } 
+                ] 
+              }
             ]
           }
         }]

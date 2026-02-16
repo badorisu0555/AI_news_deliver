@@ -12,8 +12,9 @@ def dynamo_batch_write(news_df, table_name, region_name='ap-northeast-1'):
     #JSONファイルの読み込み
     # dynamodbの設定
     dynamodb = boto3.resource('dynamodb', region_name=region_name)
+    table = dynamodb.Table(table_name)
 
-    with dynamodb.batch_writer() as batch:
+    with table.batch_writer() as batch:
         for item in news_data:
             item_not_has_nan = {key: item[key] for key in item if item[key] is not np.nan}
             batch.put_item(Item=item_not_has_nan)

@@ -100,3 +100,8 @@ https://note.com/eurekachan/n/n0c1c1b8793e2
 
 ### やりたいけどRSSがない
 https://ai-media-bsg.com/
+
+### アップデート手順
+- 修正箇所を修正し、本Gitのmainブランチへデプロイ。すると、各種テストやAWSでのリソース作成などが自動実行される
+- 作成したLambda関数のIPアドレスを起動したECSタスクへ変更する
+- Lambda関数をデプロイし、テストを実行。問題なければ完了

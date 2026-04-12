@@ -24,7 +24,7 @@ def create_response(prompt_text,news_data):
         "messages":[
             {"role":"user","content":prompt}
         ],
-        "max_tokens":4096,
+        "max_tokens":2048,
         "temperature":0.5,
         "anthropic_version":"bedrock-2023-05-31"
     })

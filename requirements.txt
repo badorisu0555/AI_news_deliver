@@ -17,3 +17,5 @@ pytest
 feedparser
 
 bs4
+
+scikit-learn

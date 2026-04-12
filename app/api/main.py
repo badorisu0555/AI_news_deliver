@@ -23,7 +23,12 @@ def main(days=7,table_name='ai_news'):
         print(summary)
         # Parse the summary JSON string to dict/list
         import json
-        parsed_summary = json.loads(summary)
-        return JSONResponse(content=parsed_summary)
+        try:
+            parsed_summary = json.loads(summary)
+            return JSONResponse(content=parsed_summary)
+        except json.JSONDecodeError as e:
+            print(f"[ERROR] Failed to parse summary JSON: {e}")
+            print(f"[DEBUG] Raw summary: {summary}")
+            return JSONResponse(content={"error": f"JSON parse error: {str(e)}"}, status_code=500)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

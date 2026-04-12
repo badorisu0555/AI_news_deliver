@@ -18,7 +18,7 @@ def create_response(prompt_text,news_data):
     prompt = PromptTemplate(
         input_variables=["news_data"],
         template = prompt_text)
-    prompt = prompt.format(news_data=json.dumps(news_data))
+    prompt = prompt.format(news_data=news_data)
 
     body = json.dumps({
         "messages":[
@@ -46,14 +46,9 @@ def summarize_news_with_LLM(news_data):
     prompt_text = f.read()
     response = create_response(prompt_text,news_data)
 
-    try:
-        response_body = json.loads(response.get("body").read())
-        answer = response_body["content"][0]["text"]
-        return answer
-    except json.JSONDecodeError as e:
-        print(f"[ERROR] Failed to parse Bedrock response: {e}")
-        print(f"[DEBUG] Raw response body: {response.get('body').read()}")
-        raise
+    response_body = json.loads(response.get("body").read())
+    answer = response_body["content"][0]["text"]
+    return answer
 
 # 動作確認
 if __name__ == "__main__":
